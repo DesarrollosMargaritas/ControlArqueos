@@ -1,0 +1,66 @@
+﻿@page "/caja/{IdCaja:int}"
+@using TesoreriaMargaritas.Models
+@using TesoreriaMargaritas.Services
+@inject IErpService ErpService
+
+<PageTitle>Detalle de Caja</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
+
+    @if (cajaActual == null)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Class="mb-4">Arqueos: @cajaActual.Descripcion</MudText>
+        <MudText Typo="Typo.subtitle1" Class="mb-4" Color="Color.Secondary">ID Caja: @IdCaja</MudText>
+
+        <MudPaper Class="pa-8" Elevation="3">
+            <MudText Typo="Typo.h5" GutterBottom="true">Histórico de Arqueos</MudText>
+            <MudDivider Class="mb-4" />
+
+            @* Aquí irá nuestra tabla tipo Excel en el futuro *@
+            <MudText>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+            </MudText>
+
+            <MudAlert Severity="Severity.Info" Class="mt-4">
+                Próximamente: Grilla de control de arqueos conectada al ERP.
+            </MudAlert>
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int IdCaja { get; set; }
+
+    private RemCajaFront? cajaActual;
+
+    // Configuración de migas de pan (Breadcrumbs)
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Inicio", href: "/"),
+        new BreadcrumbItem("Detalle Caja", href: null, disabled: true)
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // En un escenario real, aquí llamaríamos al servicio para obtener el nombre de la caja
+        // Como IErpService original solo tenia el metodo de listas, casteamos o ampliamos la interfaz
+        if (ErpService is SqlErpService sqlService)
+        {
+            cajaActual = await sqlService.ObtenerCajaPorIdAsync(IdCaja);
+        }
+        else
+        {
+            // Fallback para simulación si aún no conectas SQL
+            cajaActual = new RemCajaFront { CajaFront = IdCaja, Descripcion = "Caja Simulada " + IdCaja };
+        }
+    }
+}

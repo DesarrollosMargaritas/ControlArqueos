@@ -1,0 +1,75 @@
+﻿@page "/"
+@using TesoreriaMargaritas.Models
+@using TesoreriaMargaritas.Services
+@inject IErpService ErpService
+
+<PageTitle>Control de Arqueos</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4" Color="Color.Primary">Control de Arqueos - Tesorería</MudText>
+
+    @if (puntosDeVenta == null)
+    {
+        @* Skeleton loader mientras carga *@
+        <MudProgressLinear Color="Color.Secondary" Indeterminate="true" Class="my-7" />
+    }
+    else if (!puntosDeVenta.Any())
+    {
+        <MudAlert Severity="Severity.Warning">No se encontraron puntos de venta activos.</MudAlert>
+    }
+    else
+    {
+        @* Pestañas dinámicas basadas en REM_FRONTS *@
+        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+            @foreach (var punto in puntosDeVenta)
+            {
+                <MudTabPanel Text="@punto.Titulo" Icon="@Icons.Material.Filled.Store">
+                    <MudText Typo="Typo.h6" Class="mb-3">Cajas habilitadas en: @punto.Titulo</MudText>
+
+                    @* Grid de Cajas disponibles en este punto *@
+                    <MudGrid>
+                        @if (punto.Cajas.Any())
+                        {
+                            @foreach (var caja in punto.Cajas)
+                            {
+                                <MudItem xs="12" sm="6" md="4" lg="3">
+                                    <MudPaper Elevation="3" Class="pa-4 d-flex flex-column gap-2 border-solid border-2 mud-border-primary">
+                                        <div class="d-flex justify-space-between align-center">
+                                            <MudIcon Icon="@Icons.Material.Filled.PointOfSale" Size="Size.Large" Color="Color.Success" />
+                                            <MudChip T="string" Color="Color.Info" Size="Size.Small">ID: @caja.CajaFront</MudChip>
+                                        </div>
+                                        <MudText Typo="Typo.h6">@caja.Descripcion</MudText>
+                                        <MudDivider Class="my-2" />
+
+                                        @* CORRECCIÓN: Usamos Href para navegación directa, más robusto en .NET 8 *@
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Primary"
+                                                   FullWidth="true"
+                                                   Href="@($"/caja/{caja.CajaFront}")">
+                                            Ver Arqueos
+                                        </MudButton>
+                                    </MudPaper>
+                                </MudItem>
+                            }
+                        }
+                        else
+                        {
+                            <MudItem xs="12">
+                                <MudAlert Severity="Severity.Info">Este punto no tiene cajas asignadas actualmente.</MudAlert>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudTabPanel>
+            }
+        </MudTabs>
+    }
+</MudContainer>
+
+@code {
+    private List<RemFront>? puntosDeVenta;
+
+    protected override async Task OnInitializedAsync()
+    {
+        puntosDeVenta = await ErpService.ObtenerPuntosActivosConCajasAsync();
+    }
+}
