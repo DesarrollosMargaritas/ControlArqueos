@@ -6,8 +6,6 @@
 
 <MudDialog>
     <DialogContent>
-        @* Eliminado MudContainer interno para respetar el padding natural del diálogo *@
-
         <MudPaper Elevation="0" Class="pa-4 mb-4 rounded" Style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
             <MudGrid Spacing="2">
                 <MudItem xs="12" sm="6">
@@ -84,8 +82,9 @@
 </MudDialog>
 
 @code {
+    // CORRECCIÓN: Usamos el nombre completo del tipo para evitar ambigüedades
     [CascadingParameter]
-    public MudDialogInstance MudDialog { get; set; }
+    public MudBlazor.MudDialogInstance MudDialog { get; set; }
 
     [Parameter] public ArqueoGridDto Arqueo { get; set; }
     [Parameter] public string CajaManager { get; set; }

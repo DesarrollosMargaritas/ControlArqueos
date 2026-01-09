@@ -1,16 +1,32 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavManager
 
-@* Proveedores necesarios para que MudBlazor funcione *@
-<MudThemeProvider />
+@* Proveedores de MudBlazor (Esenciales para la interactividad) *@
+<MudThemeProvider Theme="_temaMargaritas" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Primary">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" />
-        <MudText Typo="Typo.h6" Class="ml-3">Tesoreria Margaritas</MudText>
+    <MudAppBar Elevation="2" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@(() => NavManager.NavigateTo("/"))" />
+
+        <MudImage Src="logo-responsive-las-margaritas.png" Alt="Logo Margaritas" Height="40" Class="mr-3 ml-2" ObjectFit="ObjectFit.Contain" />
+
+        <MudText Typo="Typo.h6" Style="font-weight: 700; color: #F8BD0B; cursor: pointer;" @onclick="@(() => NavManager.NavigateTo("/"))">
+            Tesoreria Margaritas
+        </MudText>
+
         <MudSpacer />
+
+        <MudTooltip Text="Generar Informe Excel">
+            <MudIconButton Icon="@Icons.Material.Filled.TableView"
+                           Color="Color.Secondary"
+                           OnClick="@(() => NavManager.NavigateTo("/reporte-excel"))"
+                           Class="mr-2" />
+        </MudTooltip>
+
+        <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" />
         <MudIconButton Icon="@Icons.Material.Filled.AccountCircle" Color="Color.Inherit" />
     </MudAppBar>
 
@@ -20,3 +36,22 @@
         </MudContainer>
     </MudMainContent>
 </MudLayout>
+
+@code {
+    private MudTheme _temaMargaritas = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#382517",
+            Secondary = "#F8BD0B",
+            Tertiary = "#382517",
+            Success = "#2E7D32",
+            Error = "#C62828",
+            AppbarBackground = "#382517",
+            AppbarText = "#FFFFFF",
+            Background = "#F5F5F5",
+            DrawerBackground = "#FFFFFF"
+        },
+        
+    };
+}

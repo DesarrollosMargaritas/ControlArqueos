@@ -47,11 +47,31 @@
 
                     <MudTh Style="background-color:#bbdefb; font-weight:bold;">EFECTIVO (Venta)</MudTh>
 
-                    @foreach (var pagoHeader in reporteData.EncabezadosPagos)
+                    @* LÓGICA DE EXPANSIÓN DE PAGOS *@
+                    @if (mostrarDetallePagos)
                     {
-                        <MudTh Style="background-color:#e3f2fd; font-weight:bold;">@pagoHeader</MudTh>
+                        @* Si está expandido, mostramos las columnas individuales y un botón para contraer *@
+                        @foreach (var pagoHeader in reporteData.EncabezadosPagos)
+                        {
+                            <MudTh Style="background-color:#e3f2fd; font-weight:bold;">@pagoHeader</MudTh>
+                        }
+                        <MudTh Style="background-color:#e0f7fa; font-weight:bold;">
+                            <div class="d-flex align-center">
+                                Total Ventas
+                                <MudIconButton Icon="@Icons.Material.Filled.VisibilityOff" Size="Size.Small" OnClick="ToggleDetallePagos" Title="Ocultar detalle formas de pago" />
+                            </div>
+                        </MudTh>
                     }
-                    <MudTh Style="background-color:#e0f7fa; font-weight:bold;">Total Ventas</MudTh>
+                    else
+                    {
+                        @* Si está contraído, solo mostramos Total Ventas con botón para expandir *@
+                        <MudTh Style="background-color:#e0f7fa; font-weight:bold;">
+                            <div class="d-flex align-center">
+                                Total Ventas
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" OnClick="ToggleDetallePagos" Title="Ver detalle formas de pago" />
+                            </div>
+                        </MudTh>
+                    }
 
                     <MudTh Style="background-color:#fff3e0;">Base</MudTh>
                     <MudTh Style="background-color:#fff3e0;">Gastos</MudTh>
@@ -65,7 +85,6 @@
                     <MudTh Style="background-color:#d1c4e9; font-weight:bold; border-left: 2px solid #673ab7;">Auditado</MudTh>
 
                     <MudTh Style="background-color:#e8f5e9;">Asegurado</MudTh>
-                    @* NUEVA COLUMNA: Efectivo Entregado *@
                     <MudTh Style="background-color:#c8e6c9; font-weight:bold; border-left: 2px solid #81c784;">Ef. Entregado</MudTh>
                 </HeaderContent>
 
@@ -91,21 +110,27 @@
                         @context.Ef_Ventas.ToString("N0")
                     </MudTd>
 
-                    @foreach (var pagoHeader in reporteData.EncabezadosPagos)
+                    @* LÓGICA DE EXPANSIÓN EN FILAS *@
+                    @if (mostrarDetallePagos)
                     {
-                        var valor = context.DesglosePagos.ContainsKey(pagoHeader) ? context.DesglosePagos[pagoHeader] : 0;
-                        <MudTd DataLabel="@pagoHeader" Style="text-align:right;">
-                            @if (valor != 0)
-                            {
-                                @valor.ToString("N0")
-                            }
-                            else
-                            {
+                        @foreach (var pagoHeader in reporteData.EncabezadosPagos)
+                        {
+                            var valor = context.DesglosePagos.ContainsKey(pagoHeader) ? context.DesglosePagos[pagoHeader] : 0;
+                            <MudTd DataLabel="@pagoHeader" Style="text-align:right;">
+                                @if (valor != 0)
+                                {
+                                    @valor.ToString("N0")
+                                }
+                                else
+                                {
 
-                                <span style="color:#ccc">-</span>
-                            }
-                        </MudTd>
+                                    <span style="color:#ccc">-</span>
+                                }
+                            </MudTd>
+                        }
                     }
+
+                    @* Total Ventas (Siempre visible) *@
                     <MudTd DataLabel="Total Ventas" Style="text-align:right; font-weight:bold; background-color:#e0f7fa;">@context.TotalVentasNetas.ToString("N0")</MudTd>
 
                     <MudTd DataLabel="Base" Style="text-align:right;">@context.Ef_Base.ToString("N0")</MudTd>
@@ -133,7 +158,6 @@
 
                     <MudTd DataLabel="Asegurado" Style="text-align:right;">@context.Ef_Asegurado.ToString("N0")</MudTd>
 
-                    @* Valor Efectivo Entregado *@
                     <MudTd DataLabel="Ef. Entregado" Style="text-align:right; font-weight:bold; background-color:#e8f5e9; border-left: 2px solid #81c784;">
                         @if (context.TotalPagosPosteriores != 0)
                         {
@@ -157,6 +181,7 @@
 
     private RemCajaFront? cajaActual;
     private ReporteArqueosResponse? reporteData;
+    private bool mostrarDetallePagos = false; // Estado para el toggle
 
     private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
     {
@@ -187,6 +212,11 @@
         }
     }
 
+    private void ToggleDetallePagos()
+    {
+        mostrarDetallePagos = !mostrarDetallePagos;
+    }
+
     private string ObtenerEstiloDescuadre(double valor)
     {
         if (valor < -100) return "color:red; font-weight:bold; text-align:right;";
@@ -213,7 +243,6 @@
         }
     }
 
-    // Método para abrir el nuevo diálogo de Gastos
     private async Task AbrirDialogoPagoCierre(ArqueoGridDto arqueo)
     {
         var parameters = new DialogParameters<DialogoPagoCierre>

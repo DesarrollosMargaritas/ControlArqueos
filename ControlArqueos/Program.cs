@@ -9,17 +9,20 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Registrar MudBlazor (Versión 8)
 builder.Services.AddMudServices();
 
 // 1. Contexto Principal (ERP)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. Contexto Auditoría (Nueva BD)
+// 2. Contexto Auditoría
 builder.Services.AddDbContext<AuditDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("AuditConnection")));
 
 builder.Services.AddScoped<IErpService, SqlErpService>();
+builder.Services.AddScoped<ExcelExportService>();
 
 var app = builder.Build();
 

@@ -5,28 +5,38 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-
-    @* Estilos base *@
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" href="app.css" />
-    <link rel="stylesheet" href="TesoreriaMargaritas.styles.css" />
+    <link rel="stylesheet" href="ControlArqueos.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
 
-    @* --- MUDBLAZOR: ESTILOS Y FUENTES --- *@
+    @* Fuentes Roboto *@
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+
+    @* Estilos MudBlazor *@
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
 
-    @* IMPORTANTE: Agregamos el modo interactivo aquí *@
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 
 <body>
-    @* IMPORTANTE: Agregamos el modo interactivo aquí para que funcionen los clics *@
     <Routes @rendermode="InteractiveServer" />
 
     <script src="_framework/blazor.web.js"></script>
+
+    @* Script MudBlazor *@
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+
+    <script>
+        window.saveAsFile = (fileName, byteBase64) => {
+            var link = document.createElement('a');
+            link.download = fileName;
+            link.href = "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64," + byteBase64;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
 </body>
 
 </html>
-@using static Microsoft.AspNetCore.Components.Web.RenderMode
