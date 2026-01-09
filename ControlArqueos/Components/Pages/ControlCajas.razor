@@ -10,7 +10,6 @@
 
     @if (puntosDeVenta == null)
     {
-        @* Skeleton loader mientras carga *@
         <MudProgressLinear Color="Color.Secondary" Indeterminate="true" Class="my-7" />
     }
     else if (!puntosDeVenta.Any())
@@ -19,14 +18,12 @@
     }
     else
     {
-        @* Pestañas dinámicas basadas en REM_FRONTS *@
         <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
             @foreach (var punto in puntosDeVenta)
             {
                 <MudTabPanel Text="@punto.Titulo" Icon="@Icons.Material.Filled.Store">
                     <MudText Typo="Typo.h6" Class="mb-3">Cajas habilitadas en: @punto.Titulo</MudText>
 
-                    @* Grid de Cajas disponibles en este punto *@
                     <MudGrid>
                         @if (punto.Cajas.Any())
                         {
@@ -36,16 +33,16 @@
                                     <MudPaper Elevation="3" Class="pa-4 d-flex flex-column gap-2 border-solid border-2 mud-border-primary">
                                         <div class="d-flex justify-space-between align-center">
                                             <MudIcon Icon="@Icons.Material.Filled.PointOfSale" Size="Size.Large" Color="Color.Success" />
-                                            <MudChip T="string" Color="Color.Info" Size="Size.Small">ID: @caja.CajaFront</MudChip>
+                                            <MudChip T="string" Color="Color.Info" Size="Size.Small">Caja: @caja.CajaFront</MudChip>
                                         </div>
                                         <MudText Typo="Typo.h6">@caja.Descripcion</MudText>
                                         <MudDivider Class="my-2" />
 
-                                        @* CORRECCIÓN: Usamos Href para navegación directa, más robusto en .NET 8 *@
+                                        @* CORRECCIÓN: Enviamos IdFront Y CajaFront *@
                                         <MudButton Variant="Variant.Filled"
                                                    Color="Color.Primary"
                                                    FullWidth="true"
-                                                   Href="@($"/caja/{caja.CajaFront}")">
+                                                   Href="@($"/caja/{punto.IdFront}/{caja.CajaFront}")">
                                             Ver Arqueos
                                         </MudButton>
                                     </MudPaper>

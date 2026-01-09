@@ -1,0 +1,126 @@
+﻿@using TesoreriaMargaritas.Models
+@using TesoreriaMargaritas.Services
+@using MudBlazor
+@inject IErpService ErpService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @* Eliminado MudContainer interno para respetar el padding natural del diálogo *@
+
+        <MudPaper Elevation="0" Class="pa-4 mb-4 rounded" Style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Cajero</MudText>
+                    <MudText Typo="Typo.body1"><b>@Arqueo.NombreCajero</b></MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Fecha</MudText>
+                    <MudText Typo="Typo.body1"><b>@Arqueo.Fecha.ToString("dd/MM/yyyy")</b></MudText>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Descuadre Neto Actual</MudText>
+                    <MudText Typo="Typo.h5" Color="@(Arqueo.Ef_DescuadreFinal < 0 ? Color.Error : Color.Success)">
+                        <b>@Arqueo.Ef_DescuadreFinal.ToString("C0")</b>
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @if (Arqueo.Compensaciones != null && Arqueo.Compensaciones.Any())
+        {
+            <MudText Typo="Typo.subtitle2" Class="mb-2 mt-4">Compensaciones Previas</MudText>
+            <MudPaper Elevation="0" Class="mb-4" Outlined="true">
+                <MudList T="string" Dense="true" DisablePadding="true">
+                    @foreach (var item in Arqueo.Compensaciones)
+                    {
+                        <MudListItem Icon="@Icons.Material.Filled.CheckCircle" IconColor="Color.Success" Class="border-b">
+                            <div class="d-flex justify-space-between align-center width-100">
+                                <MudText Typo="Typo.body2">@item.Observacion</MudText>
+                                <MudText Typo="Typo.body2" Color="@(item.Valor >= 0 ? Color.Success : Color.Error)">
+                                    <b>@item.Valor.ToString("C0")</b>
+                                </MudText>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            </MudPaper>
+
+            <div class="d-flex justify-space-between mb-4 pa-3 rounded" style="background-color: #e8f5e9; border: 1px solid #c8e6c9;">
+                <MudText Typo="Typo.body2"><b>Nuevo Saldo Auditado:</b></MudText>
+                <MudText Typo="Typo.body1" Color="Color.Success"><b>@Arqueo.Ef_DescuadreAuditado.ToString("C0")</b></MudText>
+            </div>
+        }
+
+        <MudText Typo="Typo.subtitle1" Class="mt-2 mb-2"><b>Nueva Compensación</b></MudText>
+
+        <MudForm @ref="form">
+            <MudStack Spacing="3">
+                <MudTextField @bind-Value="nuevoValor"
+                              Label="Valor (Suma o Resta)"
+                              Format="N0"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                              HelperText="Ingrese valores positivos para compensar faltantes"
+                              Variant="Variant.Text"
+                              Margin="Margin.Normal"
+                              Required="true" />
+
+                <MudTextField @bind-Value="observacion"
+                              Label="Observación / Concepto"
+                              Lines="3"
+                              Variant="Variant.Text"
+                              Margin="Margin.Normal"
+                              Required="true"
+                              Placeholder="Escriba aquí la justificación..." />
+            </MudStack>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" Class="mr-2">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="GuardarCompensacion">Guardar Ajuste</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    public MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public ArqueoGridDto Arqueo { get; set; }
+    [Parameter] public string CajaManager { get; set; }
+
+    private MudForm form;
+    private double nuevoValor;
+    private string observacion = string.Empty;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task GuardarCompensacion()
+    {
+        await form.Validate();
+        if (!form.IsValid) return;
+
+        var compensacion = new CompensacionArqueo
+        {
+            Caja = CajaManager,
+            NumeroArqueo = Arqueo.NumeroArqueo,
+            Valor = nuevoValor,
+            Observacion = observacion,
+            FechaRegistro = DateTime.Now,
+            Usuario = "Auditor"
+        };
+
+        var exito = await ErpService.AgregarCompensacionAsync(compensacion);
+
+        if (exito)
+        {
+            Snackbar.Add("Compensación agregada correctamente", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            Snackbar.Add("Error al guardar", Severity.Error);
+        }
+    }
+}

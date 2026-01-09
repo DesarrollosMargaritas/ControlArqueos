@@ -1,11 +1,13 @@
-﻿@page "/caja/{IdCaja:int}"
+﻿@page "/caja/{IdFront:int}/{IdCaja:int}"
 @using TesoreriaMargaritas.Models
 @using TesoreriaMargaritas.Services
+@using System.Globalization
 @inject IErpService ErpService
+@inject IDialogService DialogService
 
 <PageTitle>Detalle de Caja</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
     <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
 
     @if (cajaActual == null)
@@ -14,35 +16,148 @@
     }
     else
     {
-        <MudText Typo="Typo.h4" Class="mb-4">Arqueos: @cajaActual.Descripcion</MudText>
-        <MudText Typo="Typo.subtitle1" Class="mb-4" Color="Color.Secondary">ID Caja: @IdCaja</MudText>
+        <div class="d-flex justify-space-between align-center mb-4">
+            <div>
+                <MudText Typo="Typo.h4">Arqueos: @cajaActual.Descripcion</MudText>
+                <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
+                    Punto: @IdFront | Caja: @IdCaja | Enlace: @(cajaActual.CajaManager ?? "No Configurado")
+                </MudText>
+            </div>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="CargarDatos">
+                Recargar
+            </MudButton>
+        </div>
 
-        <MudPaper Class="pa-8" Elevation="3">
-            <MudText Typo="Typo.h5" GutterBottom="true">Histórico de Arqueos</MudText>
-            <MudDivider Class="mb-4" />
+        @if (reporteData == null)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else if (!reporteData.Filas.Any())
+        {
+            <MudAlert Severity="Severity.Info">No hay arqueos registrados en los últimos 30 días.</MudAlert>
+        }
+        else
+        {
+            <MudTable Items="@reporteData.Filas" Hover="true" Dense="true" Striped="true" Bordered="true" Elevation="3">
+                <HeaderContent>
+                    <MudTh>Acciones</MudTh>
+                    <MudTh>Fecha</MudTh>
+                    <MudTh>Hora</MudTh>
+                    <MudTh>Cajero</MudTh>
 
-            @* Aquí irá nuestra tabla tipo Excel en el futuro *@
-            <MudText>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-                Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-            </MudText>
+                    <MudTh Style="background-color:#bbdefb; font-weight:bold;">EFECTIVO (Venta)</MudTh>
 
-            <MudAlert Severity="Severity.Info" Class="mt-4">
-                Próximamente: Grilla de control de arqueos conectada al ERP.
-            </MudAlert>
-        </MudPaper>
+                    @foreach (var pagoHeader in reporteData.EncabezadosPagos)
+                    {
+                        <MudTh Style="background-color:#e3f2fd; font-weight:bold;">@pagoHeader</MudTh>
+                    }
+                    <MudTh Style="background-color:#e0f7fa; font-weight:bold;">Total Ventas</MudTh>
+
+                    <MudTh Style="background-color:#fff3e0;">Base</MudTh>
+                    <MudTh Style="background-color:#fff3e0;">Gastos</MudTh>
+                    <MudTh Style="background-color:#ffe0b2;">Propinas</MudTh>
+                    <MudTh Style="background-color:#fff3e0;">Anticipos</MudTh>
+                    <MudTh Style="background-color:#fff3e0;">Calculado</MudTh>
+                    <MudTh Style="background-color:#fff3e0;">Declarado</MudTh>
+
+                    <MudTh Style="background-color:#ffebee; font-weight:bold;">Descuadre (Sis)</MudTh>
+                    <MudTh Style="background-color:#ffcdd2; font-weight:bold; border-left: 2px solid #ef9a9a;">Desc. Neto</MudTh>
+                    <MudTh Style="background-color:#d1c4e9; font-weight:bold; border-left: 2px solid #673ab7;">Auditado</MudTh>
+
+                    <MudTh Style="background-color:#e8f5e9;">Asegurado</MudTh>
+                    @* NUEVA COLUMNA: Efectivo Entregado *@
+                    <MudTh Style="background-color:#c8e6c9; font-weight:bold; border-left: 2px solid #81c784;">Ef. Entregado</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd Style="white-space: nowrap;">
+                        <MudTooltip Text="Auditoría Descuadre">
+                            <MudIconButton Icon="@Icons.Material.Filled.NoteAdd"
+                                           Color="@(context.Compensaciones.Any() ? Color.Success : Color.Default)"
+                                           OnClick="@(() => AbrirDialogoCompensacion(context))" Size="Size.Small" />
+                        </MudTooltip>
+                        <MudTooltip Text="Registrar Gasto Posterior">
+                            <MudIconButton Icon="@Icons.Material.Filled.MoneyOff"
+                                           Color="@(context.PagosPosteriores.Any() ? Color.Error : Color.Default)"
+                                           OnClick="@(() => AbrirDialogoPagoCierre(context))" Size="Size.Small" />
+                        </MudTooltip>
+                    </MudTd>
+
+                    <MudTd DataLabel="Fecha">@context.Fecha.ToString("dd/MM/yyyy")</MudTd>
+                    <MudTd DataLabel="Hora">@context.Hora.ToString(@"hh\:mm")</MudTd>
+                    <MudTd DataLabel="Cajero">@context.NombreCajero</MudTd>
+
+                    <MudTd DataLabel="Efectivo" Style="text-align:right; font-weight:bold; background-color:#bbdefb;">
+                        @context.Ef_Ventas.ToString("N0")
+                    </MudTd>
+
+                    @foreach (var pagoHeader in reporteData.EncabezadosPagos)
+                    {
+                        var valor = context.DesglosePagos.ContainsKey(pagoHeader) ? context.DesglosePagos[pagoHeader] : 0;
+                        <MudTd DataLabel="@pagoHeader" Style="text-align:right;">
+                            @if (valor != 0)
+                            {
+                                @valor.ToString("N0")
+                            }
+                            else
+                            {
+
+                                <span style="color:#ccc">-</span>
+                            }
+                        </MudTd>
+                    }
+                    <MudTd DataLabel="Total Ventas" Style="text-align:right; font-weight:bold; background-color:#e0f7fa;">@context.TotalVentasNetas.ToString("N0")</MudTd>
+
+                    <MudTd DataLabel="Base" Style="text-align:right;">@context.Ef_Base.ToString("N0")</MudTd>
+                    <MudTd DataLabel="Gastos" Style="text-align:right;">@context.Ef_Gastos.ToString("N0")</MudTd>
+                    <MudTd DataLabel="Propinas" Style="text-align:right; background-color:#ffe0b2;">@context.Ef_Propinas.ToString("N0")</MudTd>
+                    <MudTd DataLabel="Anticipos" Style="text-align:right;">@context.Ef_Anticipos.ToString("N0")</MudTd>
+                    <MudTd DataLabel="Calculado" Style="text-align:right;">@context.Ef_Calculado.ToString("N0")</MudTd>
+                    <MudTd DataLabel="Declarado" Style="text-align:right;">@context.Ef_Declarado.ToString("N0")</MudTd>
+
+                    <MudTd DataLabel="Descuadre (Sis)" Style="@ObtenerEstiloDescuadre(context.Ef_Descuadre)">
+                        @context.Ef_Descuadre.ToString("N0")
+                    </MudTd>
+
+                    <MudTd DataLabel="Desc. Neto" Style="@(ObtenerEstiloDescuadre(context.Ef_DescuadreFinal) + "border-left: 2px solid #ef9a9a;")">
+                        @context.Ef_DescuadreFinal.ToString("N0")
+                    </MudTd>
+
+                    <MudTd DataLabel="Auditado" Style="@(ObtenerEstiloDescuadre(context.Ef_DescuadreAuditado) + "background-color:#ede7f6; border-left: 2px solid #673ab7;")">
+                        @if (context.TotalCompensado != 0)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" Class="mr-1" />
+                        }
+                        @context.Ef_DescuadreAuditado.ToString("N0")
+                    </MudTd>
+
+                    <MudTd DataLabel="Asegurado" Style="text-align:right;">@context.Ef_Asegurado.ToString("N0")</MudTd>
+
+                    @* Valor Efectivo Entregado *@
+                    <MudTd DataLabel="Ef. Entregado" Style="text-align:right; font-weight:bold; background-color:#e8f5e9; border-left: 2px solid #81c784;">
+                        @if (context.TotalPagosPosteriores != 0)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.MoneyOff" Size="Size.Small" Color="Color.Error" Class="mr-1" />
+                        }
+                        @context.Ef_EfectivoEntregado.ToString("N0")
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        }
     }
 </MudContainer>
 
 @code {
-    [Parameter]
-    public int IdCaja { get; set; }
+    [Parameter] public int IdFront { get; set; }
+    [Parameter] public int IdCaja { get; set; }
 
     private RemCajaFront? cajaActual;
+    private ReporteArqueosResponse? reporteData;
 
-    // Configuración de migas de pan (Breadcrumbs)
     private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
     {
         new BreadcrumbItem("Inicio", href: "/"),
@@ -51,16 +166,70 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // En un escenario real, aquí llamaríamos al servicio para obtener el nombre de la caja
-        // Como IErpService original solo tenia el metodo de listas, casteamos o ampliamos la interfaz
+        await CargarDatos();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
         if (ErpService is SqlErpService sqlService)
         {
-            cajaActual = await sqlService.ObtenerCajaPorIdAsync(IdCaja);
+            cajaActual = await sqlService.ObtenerCajaPorIdAsync(IdFront, IdCaja);
+
+            if (cajaActual != null)
+            {
+                reporteData = await ErpService.ObtenerArqueosUltimos30Dias(IdFront, IdCaja);
+            }
         }
-        else
+    }
+
+    private string ObtenerEstiloDescuadre(double valor)
+    {
+        if (valor < -100) return "color:red; font-weight:bold; text-align:right;";
+        if (valor > 100) return "color:blue; font-weight:bold; text-align:right;";
+        return "color:green; text-align:right;";
+    }
+
+    private async Task AbrirDialogoCompensacion(ArqueoGridDto arqueo)
+    {
+        var parameters = new DialogParameters<DialogoCompensacion>
         {
-            // Fallback para simulación si aún no conectas SQL
-            cajaActual = new RemCajaFront { CajaFront = IdCaja, Descripcion = "Caja Simulada " + IdCaja };
+            { x => x.Arqueo, arqueo },
+            { x => x.CajaManager, cajaActual?.CajaManager ?? "" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<DialogoCompensacion>("Compensar Descuadre", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await CargarDatos();
+        }
+    }
+
+    // Método para abrir el nuevo diálogo de Gastos
+    private async Task AbrirDialogoPagoCierre(ArqueoGridDto arqueo)
+    {
+        var parameters = new DialogParameters<DialogoPagoCierre>
+        {
+            { x => x.Arqueo, arqueo },
+            { x => x.CajaManager, cajaActual?.CajaManager ?? "" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<DialogoPagoCierre>("Registrar Gasto Posterior", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await CargarDatos();
         }
     }
 }

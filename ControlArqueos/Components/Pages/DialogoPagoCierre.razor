@@ -1,0 +1,159 @@
+﻿@using TesoreriaMargaritas.Models
+@using TesoreriaMargaritas.Services
+@using MudBlazor
+@inject IErpService ErpService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudPaper Elevation="0" Class="pa-4 mb-4 rounded" Style="background-color: #fff3e0; border: 1px solid #ffe0b2;">
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Cajero</MudText>
+                    <MudText Typo="Typo.body1"><b>@Arqueo.NombreCajero</b></MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Efectivo Asegurado</MudText>
+                    <MudText Typo="Typo.body1"><b>@Arqueo.Ef_Asegurado.ToString("C0")</b></MudText>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        @if (Arqueo.PagosPosteriores != null && Arqueo.PagosPosteriores.Any())
+        {
+            <MudText Typo="Typo.subtitle2" Class="mb-2 mt-4">Gastos Registrados</MudText>
+            <MudPaper Elevation="0" Class="mb-4" Outlined="true">
+                <MudList T="string" Dense="true" DisablePadding="true">
+                    @foreach (var item in Arqueo.PagosPosteriores)
+                    {
+                        <MudListItem Icon="@Icons.Material.Filled.MoneyOff" IconColor="Color.Error" Class="border-b">
+                            <div class="d-flex justify-space-between align-center width-100">
+                                <div>
+                                    <MudText Typo="Typo.body2" Style="font-weight: 500;">@item.Concepto</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@item.Observacion</MudText>
+                                </div>
+                                <MudText Typo="Typo.body2" Color="Color.Error"><b>@item.Valor.ToString("C0")</b></MudText>
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            </MudPaper>
+
+            <div class="d-flex justify-space-between mb-4 pa-3 rounded" style="background-color: #e3f2fd; border: 1px solid #bbdefb;">
+                <MudText Typo="Typo.body2"><b>Efectivo Final a Entregar:</b></MudText>
+                <MudText Typo="Typo.body1" Color="Color.Primary"><b>@Arqueo.Ef_EfectivoEntregado.ToString("C0")</b></MudText>
+            </div>
+        }
+
+        <MudText Typo="Typo.subtitle1" Class="mb-2 mt-2"><b>Registrar Nuevo Gasto</b></MudText>
+
+        <MudForm @ref="form">
+            <MudStack Spacing="3">
+                <MudTextField @bind-Value="nuevoValorPositivo"
+                              Label="Valor del Gasto"
+                              Format="N0"
+                              InputType="InputType.Number"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                              HelperText="Se registrará automáticamente como una resta"
+                              Variant="Variant.Text"
+                              Margin="Margin.Normal"
+                              Required="true" />
+
+                @* ALTERNATIVA ROBUSTA: MudRadioGroup *@
+                <div class="mt-4 mb-2">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Concepto del Gasto</MudText>
+                    <MudPaper Elevation="0" Class="pa-2" Outlined="true">
+                        <MudRadioGroup @bind-Value="conceptoSeleccionado" Required="true">
+                            <MudStack Spacing="1">
+                                @foreach (var concepto in _listaConceptos)
+                                {
+                                    <MudRadio Value="@concepto" Color="Color.Primary" Dense="true" Size="Size.Small">@concepto</MudRadio>
+                                }
+                            </MudStack>
+                        </MudRadioGroup>
+                    </MudPaper>
+                </div>
+
+                <MudTextField @bind-Value="observacion"
+                              Label="Detalles Adicionales"
+                              Lines="2"
+                              Variant="Variant.Text"
+                              Margin="Margin.Normal"
+                              Required="true"
+                              Placeholder="Especifique detalles..." />
+            </MudStack>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" Class="mr-2">Cancelar</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="GuardarPago">Registrar Gasto</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    public MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public ArqueoGridDto Arqueo { get; set; }
+    [Parameter] public string CajaManager { get; set; }
+
+    private MudForm form;
+    private double nuevoValorPositivo;
+    private string conceptoSeleccionado = string.Empty;
+    private string observacion = string.Empty;
+
+    // Lista de conceptos para el RadioGroup
+    private List<string> _listaConceptos = new List<string>
+    {
+        "FACTURAS PROVEEDORES",
+        "GASTOS DE MANTENIMIENTO",
+        "NOMINA",
+        "PAGO DOMICILIOS",
+        "PAGO RECIBOS"
+    };
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task GuardarPago()
+    {
+        await form.Validate();
+        if (!form.IsValid) return;
+
+        if (string.IsNullOrEmpty(conceptoSeleccionado))
+        {
+            Snackbar.Add("Debe seleccionar un concepto", Severity.Warning);
+            return;
+        }
+
+        if (nuevoValorPositivo <= 0)
+        {
+            Snackbar.Add("El valor debe ser mayor a 0", Severity.Warning);
+            return;
+        }
+
+        var pago = new PagoCierre
+        {
+            Caja = CajaManager,
+            NumeroArqueo = Arqueo.NumeroArqueo,
+            Valor = -Math.Abs(nuevoValorPositivo),
+            Concepto = conceptoSeleccionado,
+            Observacion = observacion,
+            FechaRegistro = DateTime.Now,
+            Usuario = "Auditor"
+        };
+
+        var exito = await ErpService.AgregarPagoCierreAsync(pago);
+
+        if (exito)
+        {
+            Snackbar.Add("Gasto registrado correctamente", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            Snackbar.Add("Error al guardar", Severity.Error);
+        }
+    }
+}
