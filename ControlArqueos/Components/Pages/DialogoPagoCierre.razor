@@ -21,18 +21,22 @@
 
         @if (Arqueo.PagosPosteriores != null && Arqueo.PagosPosteriores.Any())
         {
-            <MudText Typo="Typo.subtitle2" Class="mb-2 mt-4">Gastos Registrados</MudText>
+            <MudText Typo="Typo.subtitle2" Class="mb-2 mt-4">Movimientos Registrados</MudText>
             <MudPaper Elevation="0" Class="mb-4" Outlined="true">
                 <MudList T="string" Dense="true" DisablePadding="true">
                     @foreach (var item in Arqueo.PagosPosteriores)
                     {
-                        <MudListItem Icon="@Icons.Material.Filled.MoneyOff" IconColor="Color.Error" Class="border-b">
+                        <MudListItem Icon="@(item.Valor < 0 ? Icons.Material.Filled.MoneyOff : Icons.Material.Filled.AttachMoney)"
+                                     IconColor="@(item.Valor < 0 ? Color.Error : Color.Success)"
+                                     Class="border-b">
                             <div class="d-flex justify-space-between align-center width-100">
                                 <div>
                                     <MudText Typo="Typo.body2" Style="font-weight: 500;">@item.Concepto</MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@item.Observacion</MudText>
                                 </div>
-                                <MudText Typo="Typo.body2" Color="Color.Error"><b>@item.Valor.ToString("C0")</b></MudText>
+                                <MudText Typo="Typo.body2" Color="@(item.Valor < 0 ? Color.Error : Color.Success)">
+                                    <b>@item.Valor.ToString("C0")</b>
+                                </MudText>
                             </div>
                         </MudListItem>
                     }
@@ -45,24 +49,23 @@
             </div>
         }
 
-        <MudText Typo="Typo.subtitle1" Class="mb-2 mt-2"><b>Registrar Nuevo Gasto</b></MudText>
+        <MudText Typo="Typo.subtitle1" Class="mb-2 mt-2"><b>Registrar Nuevo Movimiento</b></MudText>
 
         <MudForm @ref="form">
             <MudStack Spacing="3">
-                <MudTextField @bind-Value="nuevoValorPositivo"
-                              Label="Valor del Gasto"
+                <MudTextField @bind-Value="nuevoValor"
+                              Label="Valor (Positivo suma, Negativo resta)"
                               Format="N0"
-                              InputType="InputType.Number"
+                              InputType="InputType.Text"
                               Adornment="Adornment.Start"
                               AdornmentIcon="@Icons.Material.Filled.AttachMoney"
-                              HelperText="Se registrará automáticamente como una resta"
+                              HelperText="Use signo negativo (-) para registrar un GASTO."
                               Variant="Variant.Text"
                               Margin="Margin.Normal"
                               Required="true" />
 
-                @* ALTERNATIVA ROBUSTA: MudRadioGroup *@
                 <div class="mt-4 mb-2">
-                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Concepto del Gasto</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Concepto</MudText>
                     <MudPaper Elevation="0" Class="pa-2" Outlined="true">
                         <MudRadioGroup @bind-Value="conceptoSeleccionado" Required="true">
                             <MudStack Spacing="1">
@@ -88,23 +91,22 @@
 
     <DialogActions>
         <MudButton OnClick="Cancel" Variant="Variant.Text" Class="mr-2">Cancelar</MudButton>
-        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="GuardarPago">Registrar Gasto</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="GuardarPago">Registrar</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter]
-    public MudDialogInstance MudDialog { get; set; }
+    public MudBlazor.MudDialogInstance MudDialog { get; set; }
 
     [Parameter] public ArqueoGridDto Arqueo { get; set; }
     [Parameter] public string CajaManager { get; set; }
 
     private MudForm form;
-    private double nuevoValorPositivo;
+    // CAMBIO: Renombrado a 'nuevoValor' y ahora permite cualquier signo
+    private double nuevoValor;
     private string conceptoSeleccionado = string.Empty;
     private string observacion = string.Empty;
-
-    // Lista de conceptos para el RadioGroup
 
     private List<string> _listaConceptos = new List<string>
     {
@@ -112,7 +114,9 @@
         "GASTOS DE MANTENIMIENTO",
         "NOMINA",
         "PAGO DOMICILIOS",
-        "PAGO RECIBOS"
+        "PAGO RECIBOS",
+        "INGRESO EXTRA / AJUSTE",
+        "COMPENSACION DE EFECTIVO DE MAS"// Opcional: Agregar un concepto positivo explícito
     };
 
     private void Cancel() => MudDialog.Cancel();
@@ -128,9 +132,9 @@
             return;
         }
 
-        if (nuevoValorPositivo <= 0)
+        if (nuevoValor == 0)
         {
-            Snackbar.Add("El valor debe ser mayor a 0", Severity.Warning);
+            Snackbar.Add("El valor no puede ser cero", Severity.Warning);
             return;
         }
 
@@ -138,7 +142,8 @@
         {
             Caja = CajaManager,
             NumeroArqueo = Arqueo.NumeroArqueo,
-            Valor = -Math.Abs(nuevoValorPositivo),
+            // CAMBIO CRÍTICO: Guardamos el valor tal cual lo ingresó el usuario (+ o -)
+            Valor = nuevoValor,
             Concepto = conceptoSeleccionado,
             Observacion = observacion,
             FechaRegistro = DateTime.Now,
@@ -149,7 +154,9 @@
 
         if (exito)
         {
-            Snackbar.Add("Gasto registrado correctamente", Severity.Success);
+            // Mensaje dinámico según el signo
+            string tipoMovimiento = nuevoValor < 0 ? "Gasto" : "Ingreso";
+            Snackbar.Add($"{tipoMovimiento} registrado correctamente", Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));
         }
         else

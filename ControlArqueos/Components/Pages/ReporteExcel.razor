@@ -9,29 +9,28 @@
 
 <PageTitle>Generar Reporte Excel</PageTitle>
 
-@* Estilos locales para esta página *@
 <style>
     .corporate-header {
-        background-color: #9F1C0A; /* Rojo Corporativo */
+        background: linear-gradient(135deg, #9F1C0A 0%, #7c1608 100%);
         color: white;
         border-radius: 10px 10px 0 0;
     }
 
-    .btn-corporate {
-        background-color: #9F1C0A;
+    .btn-descargar {
+        background-color: #2E7D32;
         color: white;
         border: none;
+        padding: 0.8rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+        transition: transform 0.2s;
     }
 
-        .btn-corporate:hover {
-            background-color: #7c1608;
-            color: #F8BD0B; /* Amarillo al pasar el mouse */
+        .btn-descargar:hover:not(:disabled) {
+            transform: translateY(-2px);
+            background-color: #256a29;
         }
-
-    .form-control:focus, .form-select:focus {
-        border-color: #F8BD0B; /* Amarillo Corporativo */
-        box-shadow: 0 0 0 0.25rem rgba(248, 189, 11, 0.25);
-    }
 
     .card-modern {
         border: none;
@@ -39,11 +38,53 @@
         box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
 
-    .icon-box {
-        background-color: rgba(255, 255, 255, 0.2);
-        padding: 8px;
-        border-radius: 50%;
-        margin-right: 15px;
+    /* Estilos para el Multi-Select Personalizado */
+    .custom-select-button {
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        padding: 0.375rem 0.75rem;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        position: relative;
+        min-height: 38px;
+    }
+
+        .custom-select-button:after {
+            content: "";
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 5px solid transparent;
+            border-top-color: #333;
+        }
+
+    .dropdown-panel {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        max-height: 300px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid rgba(0,0,0,.15);
+        border-radius: 0.25rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+        z-index: 1000;
+        padding: 0.5rem;
+        margin-top: 5px;
+    }
+
+    .overlay-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 999;
+        background: transparent;
     }
 </style>
 
@@ -53,11 +94,7 @@
 
             <div class="card card-modern">
                 <div class="card-header corporate-header p-4 d-flex align-items-center">
-                    <div class="icon-box">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-file-earmark-spreadsheet" viewBox="0 0 16 16">
-                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V9H3V2a1 1 0 0 1 1-1h5.5v2zM3 12v-2h2v2H3zm0 1h2v2H3v-2zm3 2v-2h3v2H6zm3-3h-3v-2h3v2zm4 0v-2h3v2h-3zm3 3h-3v-2h3v2zm-3-12h2v2h-2V3zm-3 2v2H6V3h3z" />
-                        </svg>
-                    </div>
+                    <div class="me-3 fs-3">📊</div>
                     <div>
                         <h4 class="mb-0 fw-bold">Informe de Arqueos</h4>
                         <small class="text-white-50">Exportación detallada a Excel</small>
@@ -67,26 +104,16 @@
                 <div class="card-body p-5">
                     @if (mensajeError != null)
                     {
-                        <div class="alert alert-danger d-flex align-items-center shadow-sm" role="alert">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-triangle-fill flex-shrink-0 me-3" viewBox="0 0 16 16">
-                                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
-                            </svg>
-                            <div>
-                                <strong>Error:</strong> @mensajeError
-                            </div>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Error:</strong> @mensajeError
                             <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
                         </div>
                     }
 
                     @if (mensajeExito != null)
                     {
-                        <div class="alert alert-success d-flex align-items-center shadow-sm" role="alert">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-check-circle-fill flex-shrink-0 me-3" viewBox="0 0 16 16">
-                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
-                            </svg>
-                            <div>
-                                @mensajeExito
-                            </div>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @mensajeExito
                             <button type="button" class="btn-close" @onclick="() => mensajeExito = null"></button>
                         </div>
                     }
@@ -94,89 +121,110 @@
                     @if (cargandoDatos)
                     {
                         <div class="text-center py-5">
-                            <div class="spinner-border text-danger" style="width: 3rem; height: 3rem;" role="status">
-                                <span class="visually-hidden">Cargando...</span>
-                            </div>
-                            <p class="mt-3 text-muted fw-light">Conectando con base de datos...</p>
+                            <div class="spinner-border text-danger" role="status"></div>
+                            <p class="mt-3 text-muted">Conectando con base de datos...</p>
                         </div>
                     }
                     else
                     {
-                        <form @onsubmit="DescargarReporte">
-                            <div class="row g-4">
-                                <div class="col-12">
-                                    <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">Filtros de Búsqueda</h6>
-                                </div>
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem;">Filtros de Búsqueda</h6>
+                            </div>
 
-                                <!-- Rango de Fechas -->
-                                <div class="col-md-6">
-                                    <label for="fechaInicio" class="form-label fw-bold text-dark">Desde</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-calendar"></i>📅</span>
-                                        <input type="date" class="form-control border-start-0 ps-0" id="fechaInicio" @bind="fechaInicio" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="fechaFin" class="form-label fw-bold text-dark">Hasta</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-calendar"></i>📅</span>
-                                        <input type="date" class="form-control border-start-0 ps-0" id="fechaFin" @bind="fechaFin" required>
-                                    </div>
-                                </div>
+                            <!-- Rango de Fechas -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Desde</label>
+                                <input type="date" class="form-control" @bind="fechaInicio">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Hasta</label>
+                                <input type="date" class="form-control" @bind="fechaFin">
+                            </div>
 
-                                <!-- Selector de Caja -->
-                                <div class="col-12">
-                                    <label for="cajaSelect" class="form-label fw-bold text-dark">Punto de Venta / Caja</label>
-                                    <select class="form-select form-select-lg" id="cajaSelect" @bind="idCajaSeleccionadaString">
-                                        <option value="">-- Todas las Cajas (Reporte General) --</option>
+                            <!-- Selector de Cajas (Múltiple) -->
+                            <div class="col-12 position-relative">
+                                <label class="form-label fw-bold">Puntos de Venta / Cajas</label>
+
+                                <button type="button" class="custom-select-button d-flex align-items-center justify-content-between" @onclick="() => mostrarDropdown = !mostrarDropdown">
+                                    <span class="text-truncate">
+                                        @if (cajasSeleccionadas.Count == 0)
+                                        {
+                                            <span class="text-muted">-- Seleccione Cajas --</span>
+                                        }
+                                        else if (TotalCajas > 0 && cajasSeleccionadas.Count == TotalCajas)
+                                        {
+                                            <span class="fw-bold text-success">Todas las Cajas Seleccionadas</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@cajasSeleccionadas.Count cajas seleccionadas</span>
+                                        }
+                                    </span>
+                                </button>
+
+                                @if (mostrarDropdown)
+                                {
+                                    <!-- Backdrop invisible para cerrar al hacer clic fuera -->
+                                    <div class="overlay-backdrop" @onclick="() => mostrarDropdown = false"></div>
+
+                                    <div class="dropdown-panel">
+                                        <div class="d-flex justify-content-between mb-2 px-2">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="SeleccionarTodas">Todas</button>
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="LimpiarSeleccion">Ninguna</button>
+                                        </div>
+                                        <hr class="my-1">
+
                                         @if (cajasDisponibles != null)
                                         {
                                             @foreach (var punto in cajasDisponibles)
                                             {
-                                                <optgroup label="@punto.Titulo">
-                                                    @foreach (var caja in punto.Cajas)
-                                                    {
-                                                        <option value="@caja.CajaFront">@caja.Descripcion (ID: @caja.CajaFront)</option>
-                                                    }
-                                                </optgroup>
+                                                <div class="mt-2 mb-1 px-2 fw-bold text-muted small text-uppercase bg-light rounded py-1">
+                                                    @punto.Titulo
+                                                </div>
+                                                @foreach (var caja in punto.Cajas)
+                                                {
+                                                    // Clave única compuesta
+                                                    string key = $"{punto.IdFront}-{caja.CajaFront}";
+                                                    bool isSelected = cajasSeleccionadas.Contains(key);
+
+                                                    <div class="form-check ms-2 py-1">
+                                                        <input class="form-check-input" type="checkbox"
+                                                               checked="@isSelected"
+                                                               id="chk_@key"
+                                                               @onchange="(e) => ToggleSeleccion(key, e.Value)">
+                                                        <label class="form-check-label w-100" for="chk_@key" style="cursor: pointer;">
+                                                            @caja.Descripcion <span class="text-muted small ms-1">(ID: @caja.CajaFront)</span>
+                                                        </label>
+                                                    </div>
+                                                }
                                             }
                                         }
-                                    </select>
-                                    <div class="form-text mt-2"><small>Seleccione una caja específica para ver el detalle de sus arqueos o deje en blanco para consolidado.</small></div>
-                                </div>
-
-                                <!-- Botones -->
-                                <div class="col-12 mt-5 pt-3 border-top d-flex justify-content-between align-items-center">
-                                    <a href="/" class="btn btn-outline-secondary px-4 rounded-pill">
-                                        Volver
-                                    </a>
-
-                                    <button type="submit" class="btn btn-success px-4 py-2 rounded-pill shadow-sm d-flex align-items-center" disabled="@procesando">
-                                        @if (procesando)
-                                        {
-                                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            <span>Procesando...</span>
-                                        }
-                                        else
-                                        {
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-download me-2" viewBox="0 0 16 16">
-                                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
-                                                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
-                                            </svg>
-                                            <span>Generar Excel</span>
-                                        }
-                                    </button>
-                                </div>
+                                    </div>
+                                }
+                                <div class="form-text mt-2"><small>Puede seleccionar una o varias cajas para el reporte unificado.</small></div>
                             </div>
-                        </form>
+
+                            <!-- Botones -->
+                            <div class="col-12 mt-5 pt-3 border-top d-flex justify-content-between align-items-center">
+                                <a href="/" class="btn btn-outline-secondary rounded-pill px-4">Volver</a>
+
+                                <button type="button" class="btn btn-descargar" @onclick="DescargarReporte" disabled="@procesando">
+                                    @if (procesando)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        <span>Procesando...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>📥 Descargar Excel</span>
+                                    }
+                                </button>
+                            </div>
+                        </div>
                     }
                 </div>
             </div>
-
-            <div class="text-center mt-3">
-                <small class="text-muted">Sistema de Tesorería Margaritas &copy; @DateTime.Now.Year</small>
-            </div>
-
         </div>
     </div>
 </div>
@@ -185,17 +233,18 @@
     private DateTime fechaInicio = DateTime.Now.AddDays(-7);
     private DateTime fechaFin = DateTime.Now;
 
-    // Usamos string para el select HTML y luego parseamos
-    private string idCajaSeleccionadaString = "";
-
-    // Propiedad calculada de solo lectura (getter) que convierte el string a int?
-    private int? idCajaSeleccionada => string.IsNullOrEmpty(idCajaSeleccionadaString) ? null : int.Parse(idCajaSeleccionadaString);
+    // Almacena claves "IdFront-IdCaja"
+    private HashSet<string> cajasSeleccionadas = new HashSet<string>();
+    private bool mostrarDropdown = false;
 
     private List<RemFront> cajasDisponibles = new List<RemFront>();
     private bool procesando = false;
     private bool cargandoDatos = true;
     private string? mensajeError;
     private string? mensajeExito;
+
+    // Propiedad auxiliar para saber el total de cajas disponibles
+    private int TotalCajas => cajasDisponibles?.Sum(p => p.Cajas.Count) ?? 0;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -214,6 +263,8 @@
             StateHasChanged();
 
             cajasDisponibles = await ErpService.ObtenerPuntosActivosConCajasAsync();
+            // Por defecto seleccionamos todas
+            SeleccionarTodas();
         }
         catch (Exception ex)
         {
@@ -226,8 +277,41 @@
         }
     }
 
+    private void ToggleSeleccion(string key, object? checkedValue)
+    {
+        bool isChecked = (bool)(checkedValue ?? false);
+        if (isChecked) cajasSeleccionadas.Add(key);
+        else cajasSeleccionadas.Remove(key);
+    }
+
+    private void SeleccionarTodas()
+    {
+        cajasSeleccionadas.Clear();
+        if (cajasDisponibles != null)
+        {
+            foreach (var punto in cajasDisponibles)
+            {
+                foreach (var caja in punto.Cajas)
+                {
+                    cajasSeleccionadas.Add($"{punto.IdFront}-{caja.CajaFront}");
+                }
+            }
+        }
+    }
+
+    private void LimpiarSeleccion()
+    {
+        cajasSeleccionadas.Clear();
+    }
+
     private async Task DescargarReporte()
     {
+        if (cajasSeleccionadas.Count == 0)
+        {
+            mensajeError = "Debe seleccionar al menos una caja para generar el reporte.";
+            return;
+        }
+
         procesando = true;
         mensajeError = null;
         mensajeExito = null;
@@ -235,38 +319,47 @@
 
         try
         {
-            // Lógica temporal para prueba: Usar la caja seleccionada o la primera disponible
-            int cajaConsulta = idCajaSeleccionada ?? (cajasDisponibles?.FirstOrDefault()?.Cajas.FirstOrDefault()?.CajaFront ?? 0);
+            var todasLasFilas = new List<ArqueoGridDto>();
+            var todosLosEncabezados = new HashSet<string>();
 
-            if (cajaConsulta > 0)
+            // Iteramos sobre cada caja seleccionada
+            foreach (var key in cajasSeleccionadas)
             {
-                var idFront = cajasDisponibles?.FirstOrDefault(p => p.Cajas.Any(c => c.CajaFront == cajaConsulta))?.IdFront ?? 0;
-
-                // Obtenemos datos (Limitado a 30 días por el método actual del servicio)
-                var data = await ErpService.ObtenerArqueosUltimos30Dias(idFront, cajaConsulta);
-
-                // Filtrar por fechas seleccionadas en memoria
-                var filtrados = data.Filas
-                    .Where(f => f.Fecha.Date >= fechaInicio.Date && f.Fecha.Date <= fechaFin.Date)
-                    .ToList();
-
-                if (!filtrados.Any())
+                var partes = key.Split('-');
+                if (partes.Length == 2 && int.TryParse(partes[0], out int idFront) && int.TryParse(partes[1], out int idCaja))
                 {
-                    mensajeError = "No se encontraron registros en el rango seleccionado.";
-                }
-                else
-                {
-                    var excelBytes = ExcelService.GenerarReporteArqueos(filtrados, data.EncabezadosPagos, "Reporte Arqueos");
+                    // Consultamos el reporte individual por caja
+                    var reporteCaja = await ErpService.ObtenerReporteArqueosPorRango(idFront, idCaja, fechaInicio, fechaFin);
 
-                    var fileName = $"Reporte_Arqueos_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
-                    await JS.InvokeVoidAsync("saveAsFile", fileName, Convert.ToBase64String(excelBytes));
+                    if (reporteCaja.Filas.Any())
+                    {
+                        todasLasFilas.AddRange(reporteCaja.Filas);
 
-                    mensajeExito = "Reporte descargado correctamente.";
+                        // Recolectamos los encabezados de pago dinámicos (Visa, Mastercard, etc.)
+                        foreach (var header in reporteCaja.EncabezadosPagos)
+                        {
+                            todosLosEncabezados.Add(header);
+                        }
+                    }
                 }
+            }
+
+            if (!todasLasFilas.Any())
+            {
+                mensajeError = $"No se encontraron registros entre {fechaInicio:dd/MM} y {fechaFin:dd/MM} para las cajas seleccionadas.";
             }
             else
             {
-                mensajeError = "No hay cajas disponibles para generar reporte.";
+                // Ordenamos por fecha descendente globalmente
+                var filasOrdenadas = todasLasFilas.OrderByDescending(f => f.Fecha).ThenByDescending(f => f.Hora).ToList();
+                var headersOrdenados = todosLosEncabezados.OrderBy(x => x).ToList();
+
+                var excelBytes = ExcelService.GenerarReporteArqueos(filasOrdenadas, headersOrdenados, "Reporte Unificado");
+
+                var fileName = $"Reporte_Consolidado_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+                await JS.InvokeVoidAsync("saveAsFile", fileName, Convert.ToBase64String(excelBytes));
+
+                mensajeExito = "Reporte consolidado descargado correctamente.";
             }
         }
         catch (Exception ex)

@@ -19,6 +19,9 @@ namespace TesoreriaMargaritas.Data
         public DbSet<TipoPago> TiposPago { get; set; }
         public DbSet<FacturaVenta> FacturasVenta { get; set; }
 
+        // NUEVO
+        public DbSet<CobroPago> CobrosPagos { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Puntos de Venta
@@ -29,7 +32,7 @@ namespace TesoreriaMargaritas.Data
                 entity.HasMany(d => d.Cajas).WithOne().HasForeignKey(p => p.IdFront);
             });
 
-            // Cajas (Llave Compuesta: IdFront + CajaFront)
+            // Cajas (Llave Compuesta)
             modelBuilder.Entity<RemCajaFront>(entity =>
             {
                 entity.ToTable("REM_CAJASFRONT");
@@ -37,25 +40,32 @@ namespace TesoreriaMargaritas.Data
                 entity.Property(e => e.CajaManager).HasColumnName("CAJAMANAGER");
             });
 
-            // Arqueos (Cabecera: Caja + Numero)
+            // Arqueos (Cabecera)
             modelBuilder.Entity<Arqueo>(entity =>
             {
                 entity.ToTable("ARQUEOS");
                 entity.HasKey(e => new { e.Caja, e.Numero });
             });
 
-            // Arqueos (Detalle: Caja + Numero + TipoPago)
+            // Arqueos (Detalle)
             modelBuilder.Entity<ArqueoLin>(entity =>
             {
                 entity.ToTable("ARQUEOSLIN");
                 entity.HasKey(e => new { e.Caja, e.Numero, e.CodTipoPago });
             });
 
-            // Facturas (Para Propinas: NumSerie + NumFactura)
+            // Facturas (Para Propinas)
             modelBuilder.Entity<FacturaVenta>(entity =>
             {
                 entity.ToTable("FACTURASVENTA");
                 entity.HasKey(e => new { e.NumSerie, e.NumFactura });
+            });
+
+            // NUEVO: CobrosPagos (Para Anticipos)
+            modelBuilder.Entity<CobroPago>(entity =>
+            {
+                entity.ToTable("COBROSPAGOS");
+                entity.HasNoKey(); // Marcamos sin llave si solo es para lectura agregada
             });
 
             // Tablas Auxiliares

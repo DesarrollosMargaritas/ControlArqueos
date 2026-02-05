@@ -7,6 +7,7 @@ namespace TesoreriaMargaritas.Models
 
     public class ArqueoGridDto
     {
+        public string NombreCaja { get; set; } = string.Empty;
         public DateTime Fecha { get; set; }
         public TimeSpan Hora { get; set; }
         public double NumeroArqueo { get; set; }

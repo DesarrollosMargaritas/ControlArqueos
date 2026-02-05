@@ -97,7 +97,7 @@ namespace TesoreriaMargaritas.Models
         public string Usuario { get; set; } = "Sistema";
     }
 
-    // NUEVO: Tabla para control de gastos posteriores (afecta al Asegurado)
+    // --- AQUÍ ESTÁ LA CLASE QUE FALTABA ---
     [Table("PAGOS_CIERRE")]
     public class PagoCierre
     {
@@ -108,7 +108,7 @@ namespace TesoreriaMargaritas.Models
         public double NumeroArqueo { get; set; }
 
         public double Valor { get; set; } // Siempre negativo
-        public string Concepto { get; set; } = string.Empty; // Lista desplegable
+        public string Concepto { get; set; } = string.Empty;
         public string Observacion { get; set; } = string.Empty;
 
         public DateTime FechaRegistro { get; set; } = DateTime.Now;
@@ -135,5 +135,28 @@ namespace TesoreriaMargaritas.Models
 
         [Column("DESCRIPCION")]
         public string Descripcion { get; set; } = string.Empty;
+    }
+
+    // Tabla nueva para CobrosPagos (Anticipos)
+    [Table("COBROSPAGOS")]
+    public class CobroPago
+    {
+        [Key]
+        public int Id { get; set; }
+
+        [Column("CAJAORIGEN")]
+        public string CajaOrigen { get; set; } = string.Empty;
+
+        [Column("Z")]
+        public int Z { get; set; }
+
+        [Column("CODFORMAPAGO")]
+        public string CodFormaPago { get; set; } = string.Empty;
+
+        [Column("TIPO")]
+        public int Tipo { get; set; }
+
+        [Column("IMPORTE")]
+        public double Importe { get; set; }
     }
 }

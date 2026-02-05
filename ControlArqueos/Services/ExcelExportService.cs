@@ -9,7 +9,6 @@ namespace TesoreriaMargaritas.Services
     {
         public byte[] GenerarReporteArqueos(List<ArqueoGridDto> datos, List<string> encabezadosPagos, string tituloReporte)
         {
-            // Configurar contexto de licencia (Requerido por EPPlus 5+)
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
             using (var package = new ExcelPackage())
@@ -17,29 +16,27 @@ namespace TesoreriaMargaritas.Services
                 var worksheet = package.Workbook.Worksheets.Add("Arqueos");
 
                 // --- ESTILOS ---
-                var headerStyle = worksheet.Cells["A1:Z1"].Style; // Rango estimado
+                var headerStyle = worksheet.Cells["A1:Z1"].Style;
                 headerStyle.Font.Bold = true;
                 headerStyle.Fill.PatternType = ExcelFillStyle.Solid;
-                headerStyle.Fill.BackgroundColor.SetColor(ColorTranslator.FromHtml("#9F1C0A")); // Rojo Corporativo
+                headerStyle.Fill.BackgroundColor.SetColor(ColorTranslator.FromHtml("#9F1C0A"));
                 headerStyle.Font.Color.SetColor(Color.White);
 
                 // --- ENCABEZADOS ---
                 int col = 1;
 
-                // Columnas Fijas Iniciales
                 worksheet.Cells[1, col++].Value = "Fecha";
                 worksheet.Cells[1, col++].Value = "Hora";
-                worksheet.Cells[1, col++].Value = "Caja";
+                worksheet.Cells[1, col++].Value = "Caja"; // Aquí irá el nombre real
+                worksheet.Cells[1, col++].Value = "Cierre"; // Columna Extra para el Numero
                 worksheet.Cells[1, col++].Value = "Cajero";
                 worksheet.Cells[1, col++].Value = "EFECTIVO (Venta)";
 
-                // Columnas Dinámicas (Formas de Pago)
                 foreach (var pago in encabezadosPagos)
                 {
                     worksheet.Cells[1, col++].Value = pago;
                 }
 
-                // Columnas Fijas Finales
                 worksheet.Cells[1, col++].Value = "Total Ventas";
                 worksheet.Cells[1, col++].Value = "Base";
                 worksheet.Cells[1, col++].Value = "Gastos";
@@ -61,18 +58,22 @@ namespace TesoreriaMargaritas.Services
                     col = 1;
                     worksheet.Cells[row, col++].Value = item.Fecha.ToString("dd/MM/yyyy");
                     worksheet.Cells[row, col++].Value = item.Hora.ToString(@"hh\:mm");
-                    worksheet.Cells[row, col++].Value = item.NumeroArqueo; // O nombre de caja si lo tuviéramos en DTO
+
+                    // CORRECCIÓN: Usar NombreCaja para la columna 'Caja'
+                    worksheet.Cells[row, col++].Value = item.NombreCaja;
+
+                    // Colocamos el número de cierre en columna aparte por si se necesita
+                    worksheet.Cells[row, col++].Value = item.NumeroArqueo;
+
                     worksheet.Cells[row, col++].Value = item.NombreCajero;
                     worksheet.Cells[row, col++].Value = item.Ef_Ventas;
 
-                    // Dinámicos
                     foreach (var pagoHeader in encabezadosPagos)
                     {
                         var valor = item.DesglosePagos.ContainsKey(pagoHeader) ? item.DesglosePagos[pagoHeader] : 0;
                         worksheet.Cells[row, col++].Value = valor;
                     }
 
-                    // Fijos Finales
                     worksheet.Cells[row, col++].Value = item.TotalVentasNetas;
                     worksheet.Cells[row, col++].Value = item.Ef_Base;
                     worksheet.Cells[row, col++].Value = item.Ef_Gastos;
@@ -81,7 +82,6 @@ namespace TesoreriaMargaritas.Services
                     worksheet.Cells[row, col++].Value = item.Ef_Calculado;
                     worksheet.Cells[row, col++].Value = item.Ef_Declarado;
 
-                    // Colorear Descuadre
                     var cellDesc = worksheet.Cells[row, col];
                     cellDesc.Value = item.Ef_Descuadre;
                     if (item.Ef_Descuadre < 0) cellDesc.Style.Font.Color.SetColor(Color.Red);
@@ -101,7 +101,6 @@ namespace TesoreriaMargaritas.Services
                     row++;
                 }
 
-                // Autoajustar columnas
                 worksheet.Cells.AutoFitColumns();
 
                 return package.GetAsByteArray();
